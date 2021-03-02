@@ -14,7 +14,9 @@ npm install --save sqlite3
 
 npm install --save sequelize
 
-x = SNDArchive(thiss);
+node db.js
+
+x = SNDArchive(this);
 ~snds = List();
 x.analysis.run(x.db, x.sndPath);
 x.queries.find(x.db, "findTop", "spectralCentroid", "9", {|result| result.postln; "cb!".postln; ~snds.add(result)})

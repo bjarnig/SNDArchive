@@ -16,7 +16,9 @@
 		)
 	};
 
-	queries.find = {|ev, db, method="findTop", param="start", limit=15, cb|
+	queries.find = {|ev, obj, method="findTop", param="start", limit=15|
+
+	var n = obj.name, db = obj.db;
 
 		OSCdef(\find, {|msg|
 
@@ -24,11 +26,14 @@
 			var segments = result.collect({|result|queries.convert(result.split($,))
 			}).reject{|element| File.exists(element.path).not };
 
-			cb.(segments)
+		    // TODO: move this!
+		    if(obj.items.isNil, {  obj.items = List() });
+		    obj.items.add(segments);
+		    obj.reconstruct.loadBuffers(segments);
 
 		}, "\sndarchive");
 
-		db.sendMsg("/sndarchive", method, param, limit)
+		db.sendMsg("/sndarchive", method, n, param, limit)
 	};
 
 	queries

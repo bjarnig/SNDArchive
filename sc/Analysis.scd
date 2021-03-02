@@ -9,18 +9,19 @@
 
 	analysis.onboard = { };
 
-	analysis.analyse = {|ev, db, folder, name|
+	analysis.analyse = {|ev, n, db, folder, name|
 
 		var processes = [ [\Tartini], [\SpecCentroid] ];
 	    var processNames = ["\"tartini\"","\"spectralCentroid\""];
-		var segments, features, buf, scmir, map=Array.newClear(processes.size), output=Array.newClear(processes.size);
-		var path = folder ++ name;
+    	var map=Array.newClear(processes.size), output=Array.newClear(processes.size);
+	    var segments, features, buf, scmir;
+	    var path = folder ++ name;
 
 		// Read and analyse
 		buf = Buffer.read(s, path);
 		scmir = SCMIRAudioFile(path, processes);
 		scmir.extractFeatures(normalize:false);
-		scmir.extractOnsets(threshold:0.4);
+		scmir.extractOnsets(threshold:0.1);
 		s.sync;
 
 		// Set end position for the segments
@@ -42,7 +43,7 @@
 		};
 
 		// Update the Sound with the average stats
-		db.sendMsg("/sndarchive", "sound", name, processNames.asString, output.asString);
+		db.sendMsg(SNDArchive.send, "sound", n, name, processNames.asString, output.asString);
 
 		// Create the Segments, one by one
 		segments.do{|segment, i|
@@ -52,13 +53,18 @@
 			keys.add("\"end\""); values.add(segment[1]);
 			keys.add("\"tartini\""); values.add(map[0][i]);
 			keys.add("\"spectralCentroid\""); values.add(map[1][i]);
-			db.sendMsg("/sndarchive", "segment", name, keys.asArray.asString, values.asArray.asString);
+			db.sendMsg(SNDArchive.send, "segment", n, name, keys.asArray.asString, values.asArray.asString);
 		};
 
 		"## Analysis Complete".postln;
 	};
 
-	analysis.run = {|ev, db, folder|
+	analysis.run = {|ev, obj|
+
+	    var folder = obj.sndPath;
+
+	"## inside run".postln;
+	obj.postln;
 
 		// Register the analysis responder
 		OSCdef(\find, {|msg|
@@ -66,17 +72,20 @@
 
 			{
 				sounds.do{|it|
-				it.postln;
 					if(it.asString.endsWith(".wav"), {
-						ev.analyse(db, folder, it); s.sync;
+					var parts = it.split($/);
+					var file = parts[parts.size-1];
+					var filefolder = folder;
+					parts.do{|part| filefolder = filefolder ++ "/" ++ part};
+					ev.analyse(obj.name, obj.db, filefolder.replace(file,""), file); s.sync;
 					})
 				}
 			}.fork
 
-		}, "\sndarchive");
+		}, SNDArchive.receive);
 
 
 		// Call the db to Find sounds in a folder
-		db.sendMsg("/sndarchive", "findAll", "o");
+		obj.db.sendMsg(SNDArchive.send, "findAll", obj.name);
 	}
 )

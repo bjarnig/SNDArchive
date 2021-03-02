@@ -1,89 +1,83 @@
-
+const readdirp = require('readdirp');
 const { Sequelize, DataTypes } = require('sequelize');
 const Op = Sequelize.Op;
 const osc = require('osc');
-const fs = require('fs');
-const sequelize = new Sequelize({
-    dialect: 'sqlite',
-    storage: './db/sndarchive.db'
-});
+const sequelize = {};
+const Sound = {};
+const Segment = {};
 
 // - DB init -
 
-async function connect() {
-    try {
-        await sequelize.authenticate();
-        console.log('Connection has been established successfully.');
-    } catch (error) {
-        console.error('Unable to connect to the database:', error);
-    }
-};
+function init(name) {
 
-connect();
-
-// - Entities -
-
-const Sound = sequelize.define('Sound', {
-    name: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    path: {
-        type: DataTypes.STRING
-    },
-    tartini: {
-        type: DataTypes.NUMBER
-    },
-    spectralEntropy: {
-        type: DataTypes.NUMBER
-    },
-    spectralCentroid: {
-        type: DataTypes.NUMBER
-    }
-});
-
-Sound.sync();
-
-const Segment = sequelize.define('Segment', {
-    index: {
-        type: DataTypes.NUMBER
-    },
-    start: {
-        type: DataTypes.NUMBER
-    },
-    end: {
-        type: DataTypes.NUMBER
-    },
-    tartini: {
-        type: DataTypes.NUMBER
-    },
-    spectralEntropy: {
-        type: DataTypes.NUMBER
-    },
-    spectralCentroid: {
-        type: DataTypes.NUMBER
-    }
-});
-
-Segment.belongsTo(Sound);
-Segment.sync();
-
-// - Utils -
-
-function readFiles(dirname, onFileContent, onError) {
-    fs.readdir(dirname, function (err, filenames) {
-        if (err) { onError(err); return; }
-        
-        filenames.forEach(function (filename) {
-            if(filename && filename.endsWith(".wav")) {
-                fs.readFile(dirname + filename, 'utf-8', function (err, content) {
-                    if (err) { onError(err); return; }
-                    onFileContent(filename, content);
-                });
-            }
-        });
+    sequelize[name] = new Sequelize({
+        dialect: 'sqlite',
+        storage: `./db/${name}.db`
     });
+
+    async function connect() {
+        try {
+            await sequelize[name].authenticate();
+            console.log(`=> Connection to db: ${name} established.`);
+        } catch (error) {
+            console.error('## Unable to connect to the database:', error);
+        }
+    };
+    
+    connect();
+
+    // - Entities -
+
+    Sound[name] = sequelize[name].define('Sound', {
+        name: {
+            type: DataTypes.STRING,
+            allowNull: false
+        },
+        path: {
+            type: DataTypes.STRING
+        },
+        dir: {
+            type: DataTypes.STRING
+        },
+        tartini: {
+            type: DataTypes.NUMBER
+        },
+        spectralEntropy: {
+            type: DataTypes.NUMBER
+        },
+        spectralCentroid: {
+            type: DataTypes.NUMBER
+        }
+    });
+
+    Sound[name].sync();
+
+    Segment[name] = sequelize[name].define('Segment', {
+        index: {
+            type: DataTypes.NUMBER
+        },
+        start: {
+            type: DataTypes.NUMBER
+        },
+        end: {
+            type: DataTypes.NUMBER
+        },
+        tartini: {
+            type: DataTypes.NUMBER
+        },
+        spectralEntropy: {
+            type: DataTypes.NUMBER
+        },
+        spectralCentroid: {
+            type: DataTypes.NUMBER
+        }
+    });
+
+    Segment[name].belongsTo(Sound[name]);
+    Segment[name].sync();
 }
+
+console.log(" ## SNDArchive ## ");
 
 // - OSC -
 
@@ -102,17 +96,41 @@ udpPort.open();
 
 // - API -
 
-function scan(folder) {
+function scan(n, folder) {
     console.log('## API:scan');
-    readFiles(folder, function (item) {
-        Sound.create({ name: item, path : folder });
-    });
+    console.log(folder);
+    readdirp(folder, {fileFilter: '*.wav', alwaysStat: true})
+    .on('data', (entry) => {
+        const {path, stats: {size}} = entry;
+        const split = path.split('/');
+        let name = split[split.length-1];
+        let dir = split.join('/').replace(`/${name}`, '');
+
+        console.log(path);
+        console.log(name);
+        console.log(dir);
+        console.log(`${JSON.stringify({folder, path, name, dir, size})}`);
+        Sound[n].create({ name: name, dir : dir, path : folder +'/'+ path });
+    })
+    .on('error', error => console.error('fatal error', error))
+    .on('end', () => console.log('done'));
 } 
 
-function clear() {
+function clear(n) {
     console.log('## API:clear');
-    Sound.destroy({ where: {}, truncate: true });
-    Segment.destroy({ where: {}, truncate: true });
+    if(Sound[n]) {
+        Sound[n].destroy({ where: {}, truncate: true });
+    }
+
+    if(Segment[n]) {
+        Segment[n].destroy({ where: {}, truncate: true });
+    }
+} 
+
+function clearInit(n) {
+    console.log('## API:clearInit');
+    clear(n);
+    init(n);
 } 
 
 function reply(msg) {
@@ -121,21 +139,23 @@ function reply(msg) {
     udpPort.send(msg);
 }
 
-async function findAll() {
+async function findAll(n) {
     console.log('## API:findAll');
-    const sounds = await Sound.findAll();
+    console.log(n);
+
+    const sounds = await Sound[n].findAll();
     reply({
         address: "/sndarchive",
         args: [{
             type: "s",
-            value: sounds.map(x => x.name)
+            value: sounds.map(x => x.dir +'/'+ x.name)
         }]
     });
 };
 
-async function findOne(name) {
+async function findOne(n, name) {
     console.log('## API:findOne');
-    const sound = await Sound.findOne({ where: { name: name } });
+    const sound = await Sound[n].findOne({ where: { name: name } });
     reply({
         address: "/sndarchive",
         args: [{
@@ -145,9 +165,9 @@ async function findOne(name) {
     });
 }
 
-async function findSome() {
+async function findSome(n) {
     console.log('## API:findSome');
-    const segments = await Segment.findAll({
+    const segments = await Segment[n].findAll({
         // where: {
         //     // spectralCentroid: {
         //     //     [Op.gte]: 0
@@ -175,29 +195,29 @@ async function findSome() {
     });
 }
 
-async function findTop(param, count) {
+async function findTop(n, param, count) {
     console.log('## API:findTop');
-    const segments = await Segment.findAll({
+    const segments = await Segment[n].findAll({
         order: [ [ param, 'DESC' ] ],
         limit: count,
-        include: Sound
+        include: Sound[n]
     });
 
     reply({
         address: "/sndarchive",
         args: [{
             type: "s",
-            value: JSON.stringify(segments.map(x => [x.index,x.start,x.end,x.Sound.path + x.Sound.name]))
+            value: JSON.stringify(segments.map(x => [x.index,x.start,x.end,x.Sound.path]))
         }]
     });
 }
 
-async function findBottom(param, count) {
+async function findBottom(n, param, count) {
     console.log('## API:findBottom');
-    const segments = await Segment.findAll({
+    const segments = await Segment[n].findAll({
         order: [ [ param, 'ASC' ] ],
         limit: count,
-        include: Sound
+        include: Sound[n]
     });
 
     reply({
@@ -209,9 +229,9 @@ async function findBottom(param, count) {
     });
 }
 
-async function sound(name, params, values) {
+async function sound(n, name, params, values) {
     console.log('## API:sound');            
-    const sound = await Sound.findOne(
+    const sound = await Sound[n].findOne(
         { where: { name: name } }
     );
 
@@ -222,16 +242,22 @@ async function sound(name, params, values) {
     await sound.save();
 }
 
-async function segment(name, params, values) {
+async function segment(n, name, params, values) {
     console.log('## API:segment'); 
-    const sound = await Sound.findOne({ where: { name: name } });
-    await Segment.destroy({ where: { soundId : sound.id } });
+    console.log(name); 
+    const sound = await Sound[n].findOne({ where: { name: name } });
+    await Segment[n].destroy({ where: { soundId : sound.id } });
     let segment = { SoundId : sound.id };
+
+    console.log('async function segment');
+    console.log(params);
+    console.log(values);
 
     params = JSON.parse(params);
     values = JSON.parse(values);
+
     params.forEach((element, i) => segment[element] = values[i]);
-    await Segment.create(segment);
+    await Segment[n].create(segment);
 }
 
 // - Message handling -
@@ -242,28 +268,33 @@ udpPort.on("message", function (msg) {
         
         const args = msg.args;
         const action = args[0].value;
+        const n = args[1].value;
          
         console.log(JSON.stringify(msg));
 
         switch (action) {
             case 'scan':
-                scan(args[1].value); break;
+                scan(n, args[2].value); break;
             case 'clear':
-                clear(); break;
+                clear(n); break;
+            case 'clearInit':
+                clearInit(n); break;
+            case 'init':
+                init(n); break;
             case 'findAll':
-                findAll(); break;
+                findAll(n); break;
             case 'findSome':
-                findSome(); break;
+                findSome(n); break;
             case 'findTop':
-                findTop(args[1].value, args[2].value); break;
+                findTop(n, args[2].value, args[3].value); break;
             case 'findBottom':
-                findBottom(args[1].value, args[2].value); break;
+                findBottom(n, args[2].value, args[3].value); break;
             case 'findOne':
-                findOne(args[1].value); break;
+                findOne(n, args[2].value); break;
             case 'sound':
-                sound(args[1].value, args[2].value, args[3].value); break;
+                sound(n, args[2].value, args[3].value, args[4].value); break;
             case 'segment':
-                segment(args[1].value, args[2].value, args[3].value); break;
+                segment(n, args[2].value, args[3].value, args[4].value); break;
             default:
                 console.log(`No handler found for: ${action}.`);
         }

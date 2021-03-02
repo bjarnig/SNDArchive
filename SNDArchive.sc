@@ -1,46 +1,56 @@
 SNDArchive {
 
+	// Constants
+	classvar <>send = "/sndarchive";
+	classvar <>receive = "\sndarchive";
+
+	// Members
 	var <>sndPath;
 	var <>libPath;
+	var <>address;
+	var <>port;
+	var <>name;
 	var <>analysis;
 	var <>reconstruct;
 	var <>queries;
 	var <>db;
+	var <>items;
 
-    *new { |interpreter,sounds="/Users/bjarni/Works/Adapt/Upic-Observe/material/source/saturday/",lib|
+	// Construtctor & Init
+    *new {|
+		interpreter,
+		sounds="/Users/bjarni/Works/Adapt/Upic-Observe/material/source/saturday/",
+		lib,address="127.0.0.1",port=57121,dbname="sndarchive"|
 
 		var instance;
 
 		if(lib.notNil, {
-			instance = super.newCopyArgs(sounds, lib)
+			instance = super.newCopyArgs(sounds, lib, address, port, dbname)
 		}, {
-			instance = super.newCopyArgs(sounds, Platform.userExtensionDir ++ "/Dev/SNDArchive/sc/")
+			instance = super.newCopyArgs(sounds, Platform.userExtensionDir++"/Dev/SNDArchive/sc/", address, port, dbname)
 		});
 
-		instance.analysis = interpreter.compileFile(instance.libPath ++ "Analysis.scd").value;
-		instance.reconstruct = interpreter.compileFile(instance.libPath ++ "Reconstruct.scd").value;
-		instance.queries = interpreter.compileFile(instance.libPath ++ "Queries.scd").value;
+		^instance.init(interpreter);
+	}
+
+	init{|interpreter|
+
+		this.analysis = interpreter.compileFile(this.libPath ++ "Analysis.scd").value;
+		this.reconstruct = interpreter.compileFile(this.libPath ++ "Reconstruct.scd").value;
+		this.queries = interpreter.compileFile(this.libPath ++ "Queries.scd").value;
 
 		{
 			// Address of the Node program
-			instance.db = NetAddr("127.0.0.1", 57121);
+			this.db = NetAddr(this.address, this.port);
 
-			// Clear DBs
-			instance.db.sendMsg("/sndarchive", "clear", "o");
-
-			0.1.wait;
+			// Init DBs
+			this.db.sendMsg(SNDArchive.send, "clearInit", this.name); 0.1.wait;
 
 			// Construct DB
-			instance.db.sendMsg("/sndarchive", "scan", instance.sndPath);
+			this.db.sendMsg(SNDArchive.send, "scan",  this.name, this.sndPath);
 
 	    }.fork
 
-		^instance;
-	}
-
-	start {
-
-		"## run".postln;
-
+		^this;
 	}
 }

@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "osc": "^2.4.1",
+    "readdirp": "^3.5.0",
     "sequelize": "^6.5.0",
     "sqlite3": "^5.0.1"
   }
