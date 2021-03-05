@@ -38,6 +38,7 @@ SNDArchive {
 		this.analysis = interpreter.compileFile(this.libPath ++ "Analysis.scd").value;
 		this.reconstruct = interpreter.compileFile(this.libPath ++ "Reconstruct.scd").value;
 		this.queries = interpreter.compileFile(this.libPath ++ "Queries.scd").value;
+		this.analysis.archive = this; this.reconstruct.archive = this; this.queries.archive = this;
 
 		{
 			// Address of the Node program
@@ -52,5 +53,13 @@ SNDArchive {
 	    }.fork
 
 		^this;
+	}
+
+	add{|segments,name="query"|
+
+		if(this.items.isNil, { this.items = Dictionary() });
+
+		this.items[name] = segments;
+		this.reconstruct.loadBuffers(segments);
 	}
 }

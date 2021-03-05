@@ -20,8 +20,8 @@
 		// Read and analyse
 		buf = Buffer.read(s, path);
 		scmir = SCMIRAudioFile(path, processes);
-		scmir.extractFeatures(normalize:false);
-		scmir.extractOnsets(threshold:0.1);
+		scmir.extractFeatures(normalize:true); // TODO: Make optional
+		scmir.extractOnsets(threshold:0.4); // TODO: Make optionals
 		s.sync;
 
 		// Set end position for the segments
@@ -38,7 +38,7 @@
 
 		processes.size.do{|i|
 			map[i] = features.unlace(2)[i];
-			map[i] = map[i].collect{|f| f.midicps};
+			// map[i] = map[i].collect{|f| f.midicps};
 			output[i] = map[i].sum / map[i].size;
 		};
 
@@ -56,15 +56,12 @@
 			db.sendMsg(SNDArchive.send, "segment", n, name, keys.asArray.asString, values.asArray.asString);
 		};
 
-		"## Analysis Complete".postln;
+	    ("## Analysis Complete:" + name).postln;
 	};
 
-	analysis.run = {|ev, obj|
+	analysis.run = {|ev|
 
-	    var folder = obj.sndPath;
-
-	"## inside run".postln;
-	obj.postln;
+	    var folder = ev.archive.sndPath;
 
 		// Register the analysis responder
 		OSCdef(\find, {|msg|
@@ -77,7 +74,7 @@
 					var file = parts[parts.size-1];
 					var filefolder = folder;
 					parts.do{|part| filefolder = filefolder ++ "/" ++ part};
-					ev.analyse(obj.name, obj.db, filefolder.replace(file,""), file); s.sync;
+					ev.analyse(ev.archive.name, ev.archive.db, filefolder.replace(file,""), file); s.sync;
 					})
 				}
 			}.fork
@@ -86,6 +83,6 @@
 
 
 		// Call the db to Find sounds in a folder
-		obj.db.sendMsg(SNDArchive.send, "findAll", obj.name);
+		ev.archive.db.sendMsg(SNDArchive.send, "findAll", ev.archive.name);
 	}
 )

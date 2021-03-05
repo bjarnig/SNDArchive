@@ -16,24 +16,20 @@
 		)
 	};
 
-	queries.find = {|ev, obj, method="findTop", param="start", limit=15|
+    queries.find = {|ev, method="findTop", param="start", limit=15, name="query"|
 
-	var n = obj.name, db = obj.db;
+	    var n = ev.archive.name, db = ev.archive.db;
 
 		OSCdef(\find, {|msg|
-
 			var result = msg[1].asString.replace("],","").split($[);
 			var segments = result.collect({|result|queries.convert(result.split($,))
 			}).reject{|element| File.exists(element.path).not };
 
-		    // TODO: move this!
-		    if(obj.items.isNil, {  obj.items = List() });
-		    obj.items.add(segments);
-		    obj.reconstruct.loadBuffers(segments);
+		    ev.archive.add(segments, name);
 
-		}, "\sndarchive");
+		}, SNDArchive.send);
 
-		db.sendMsg("/sndarchive", method, n, param, limit)
+	    db.sendMsg("/"++SNDArchive.receive, method, n, param, limit); ev
 	};
 
 	queries

@@ -70,6 +70,7 @@
 reconstruct.strange = {|ev,sounds|
 
 sounds = sounds.collect{|sound|ev.buffers[sound.path]};
+sounds.postln;
 
 SynthDef(\slot5, {
 	|out=0, buf=0, amp=1, mod=9, rate=1, pos=0, pan=1.0, atk=0.01, dec=0.5, sus=1.0, rel=0.5, gate=1,filt=1000|
