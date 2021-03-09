@@ -21,12 +21,10 @@
 	    var n = ev.archive.name, db = ev.archive.db;
 
 		OSCdef(\find, {|msg|
-			var result = msg[1].asString.replace("],","").split($[);
-			var segments = result.collect({|result|queries.convert(result.split($,))
+			    var result = msg[1].asString.replace("],","").split($[);
+			    var segments = result.collect({|result|queries.convert(result.split($,));
 			}).reject{|element| File.exists(element.path).not };
-
-		    ev.archive.add(segments, name);
-
+		    ev.archive.add(segments, name)
 		}, SNDArchive.send);
 
 	    db.sendMsg("/"++SNDArchive.receive, method, n, param, limit); ev

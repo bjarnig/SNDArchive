@@ -224,7 +224,7 @@ async function findBottom(n, param, count) {
         address: "/sndarchive",
         args: [{
             type: "s",
-            value: JSON.stringify(segments.map(x => [x.index,x.start,x.end,x.Sound.path + x.Sound.name]))
+            value: JSON.stringify(segments.map(x => [x.index,x.start,x.end,x.Sound.path]))
         }]
     });
 }

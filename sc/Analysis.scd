@@ -38,7 +38,6 @@
 
 		processes.size.do{|i|
 			map[i] = features.unlace(2)[i];
-			// map[i] = map[i].collect{|f| f.midicps};
 			output[i] = map[i].sum / map[i].size;
 		};
 
@@ -48,7 +47,7 @@
 		// Create the Segments, one by one
 		segments.do{|segment, i|
 			var keys = List(), values = List();
-			keys.add("\"index\""); values.add(i);
+		    keys.add("\"index\""); values.add(i);
 			keys.add("\"start\""); values.add(segment[0]);
 			keys.add("\"end\""); values.add(segment[1]);
 			keys.add("\"tartini\""); values.add(map[0][i]);
@@ -67,6 +66,8 @@
 		OSCdef(\find, {|msg|
 			var sounds = msg[1].asString.split($,);
 
+		    "## Analysis run".postln;
+
 			{
 				sounds.do{|it|
 					if(it.asString.endsWith(".wav"), {
@@ -79,7 +80,7 @@
 				}
 			}.fork
 
-		}, SNDArchive.receive);
+	    }, "/sndarchive");
 
 
 		// Call the db to Find sounds in a folder
