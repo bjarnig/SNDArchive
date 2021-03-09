@@ -16,6 +16,9 @@ npm install --save sequelize
 
 node db.js
 
+// In case of large dbs the upd packet size needs to be increased
+sudo sysctl -w net.inet.udp.maxdgram=65535
+
 /* In SuperCollider  */
 
 // First sound

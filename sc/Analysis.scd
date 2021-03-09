@@ -11,8 +11,10 @@
 
 	analysis.analyse = {|ev, n, db, folder, name|
 
-		var processes = [ [\Tartini], [\SpecCentroid] ];
-	    var processNames = ["\"tartini\"","\"spectralCentroid\""];
+	var processes = [ [\Tartini], [\SpecCentroid], [\SpectralEntropy], [\SpecFlatness], [\Loudness], [\FFTSpread], [\SensoryDissonance], [\Transient]];
+	    var processNames = ["\"tartini\"","\"spectralCentroid\"","\"spectralEntropy\"","\"specFlatness\"", "\"loudness\"", "\"fFTSpread\"", "\"sensoryDissonance\"", "\"transient\""];
+	   // var processes = [ [\Tartini], [\SpecCentroid] ];
+	   // var processNames = ["\"tartini\"","\"spectralCentroid\""];
     	var map=Array.newClear(processes.size), output=Array.newClear(processes.size);
 	    var segments, features, buf, scmir;
 	    var path = folder ++ name;
@@ -21,7 +23,7 @@
 		buf = Buffer.read(s, path);
 		scmir = SCMIRAudioFile(path, processes);
 		scmir.extractFeatures(normalize:true); // TODO: Make optional
-		scmir.extractOnsets(threshold:0.4); // TODO: Make optionals
+		scmir.extractOnsets(threshold:0.1); // TODO: Make optionals
 		s.sync;
 
 		// Set end position for the segments
@@ -36,8 +38,11 @@
 		" ## Feature and segment size:".postln;
 		features.size.postln; segments.size.postln;
 
+	    features.postln;
+
 		processes.size.do{|i|
-			map[i] = features.unlace(2)[i];
+			map[i] = features.unlace(8)[i];
+		    map[i].postln;
 			output[i] = map[i].sum / map[i].size;
 		};
 
@@ -52,6 +57,12 @@
 			keys.add("\"end\""); values.add(segment[1]);
 			keys.add("\"tartini\""); values.add(map[0][i]);
 			keys.add("\"spectralCentroid\""); values.add(map[1][i]);
+		    keys.add("\"spectralEntropy\""); values.add(map[2][i]);
+		    keys.add("\"specFlatness\""); values.add(map[3][i]);
+		    keys.add("\"loudness\""); values.add(map[4][i]);
+			keys.add("\"fFTSpread\""); values.add(map[5][i]);
+		    keys.add("\"sensoryDissonance\""); values.add(map[6][i]);
+		    keys.add("\"transient\""); values.add(map[7][i]);
 			db.sendMsg(SNDArchive.send, "segment", n, name, keys.asArray.asString, values.asArray.asString);
 		};
 

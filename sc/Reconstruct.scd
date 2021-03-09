@@ -95,8 +95,7 @@
 		pan = Pan2.ar(sig * env);
 		OffsetOut.ar(out, pan);
 	}).add;
-
-
+	
     // Utils
 
     reconstruct.format = {|ev,sounds|
@@ -191,7 +190,7 @@
 		})
 	};
 
-	reconstruct.dringmod = {|ev,sounds,name,amp=1,rate=1,mod=1,rel=2,instrument=\slot2|
+	reconstruct.dringmod = {|ev,sounds,name,amp=1,rate=1,mod=1,rel=2,instrument=\distsaw|
 	    sounds = ev.format(sounds);
 		Ndef(name)[0] =
 		Pbind(\instrument, instrument,

@@ -47,6 +47,21 @@ function init(name) {
         },
         spectralCentroid: {
             type: DataTypes.NUMBER
+        },
+        specFlatness: {
+            type: DataTypes.NUMBER
+        },
+        loudness: {
+            type: DataTypes.NUMBER
+        },
+        fFTSpread: {
+            type: DataTypes.NUMBER
+        },
+        sensoryDissonance: {
+            type: DataTypes.NUMBER
+        },
+        transient: {
+            type: DataTypes.NUMBER
         }
     });
 
@@ -69,6 +84,21 @@ function init(name) {
             type: DataTypes.NUMBER
         },
         spectralCentroid: {
+            type: DataTypes.NUMBER
+        },
+        specFlatness: {
+            type: DataTypes.NUMBER
+        },
+        loudness: {
+            type: DataTypes.NUMBER
+        },
+        fFTSpread: {
+            type: DataTypes.NUMBER
+        },
+        sensoryDissonance: {
+            type: DataTypes.NUMBER
+        },
+        transient: {
             type: DataTypes.NUMBER
         }
     });
