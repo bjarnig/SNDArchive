@@ -218,6 +218,28 @@ async function findSegments(n, param, count=10, order='DESC') {
     });
 }
 
+async function rangeSegments(n, param, count, from, to, order='DESC') {
+    console.log('## API:rangeSegments');
+
+    let condition = {};
+    condition[param] = { [Op.between]: [from, to] };
+
+    const segments = await Segment[n].findAll({
+        order: [ [ param, order ] ],
+        where: condition,
+        limit: count,
+        include: Sound[n]
+    });
+
+    reply({
+        address: "/sndarchive",
+        args: [{
+            type: "s",
+            value: JSON.stringify(segments.map(x => [x.index,x.start,x.end,x.Sound.path]))
+        }]
+    });
+}
+
 async function findAllSounds(n) {
     console.log('## API:findAllSounds');
     console.log(n);
@@ -248,6 +270,26 @@ async function findSounds(n, param, count=10, order='DESC') {
     console.log('## API:findSounds');
     const sounds = await Sound[n].findAll({
         order: [ [ param, order ] ],
+        limit: count
+    });
+
+    reply({
+        address: "/sndarchive",
+        args: [{
+            type: "s",
+            value: JSON.stringify(sounds.map(x => [0,0.0,x.duration,x.path]))
+        }]
+    });
+}
+
+async function rangeSounds(n, param, count, from, to, order='DESC') {
+    console.log('## API:rangeSounds');
+    let condition = {};
+    condition[param] = { [Op.between]: [from, to] };
+    
+    const sounds = await Sound[n].findAll({
+        order: [ [ param, order ] ],
+        where: condition,
         limit: count
     });
 
@@ -323,6 +365,10 @@ udpPort.on("message", function (msg) {
                 findSegments(n, args[2].value, args[3].value, 'DESC'); break;
             case 'bottomSegments':
                 findSegments(n, args[2].value, args[3].value, 'ASC'); break;
+            case 'topRangeSegments':
+                rangeSegments(n, args[2].value, args[3].value, args[4].value, args[5].value, 'DESC'); break;
+            case 'bottomRangeSegments':
+                rangeSegments(n, args[2].value, args[3].value, args[4].value, args[5].value, 'ASC'); break;
             case 'oneSound':
                 findOneSound(n, args[2].value); break;
             case 'allSounds':
@@ -331,8 +377,18 @@ udpPort.on("message", function (msg) {
                 findSounds(n, args[2].value, args[3].value, 'DESC'); break;
             case 'bottomSounds':
                 findSounds(n, args[2].value, args[3].value, 'ASC'); break;
+            case 'topRangeSounds':
+                rangeSounds(n, args[2].value, args[3].value, args[4].value, args[5].value, 'DESC'); break;
+            case 'bottomRangeSounds':
+                rangeSounds(n, args[2].value, args[3].value, args[4].value, args[5].value,  'ASC'); break;
             default:
                 console.log(`No handler found for: ${action}.`);
         }
     }
 });
+
+// # Debug #
+// setTimeout(() => {   
+//     init("vox");
+//     rangeSegments("vox", "duration", 1.2, 1.3, 10, 'DESC');
+// }, 10); 

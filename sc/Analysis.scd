@@ -11,9 +11,9 @@
 
 	analysis.analyse = {|ev, n, db, folder, name|
 
-	var processes = List [ [\Tartini], [\SpecCentroid], [\SpectralEntropy], [\SpecFlatness], [\Loudness], [\FFTSpread], [\SensoryDissonance], [\Transient]];
+		var processes = List [ [\Tartini], [\SpecCentroid], [\SpectralEntropy], [\SpecFlatness], [\Loudness], [\FFTSpread], [\SensoryDissonance], [\Transient]];
 	    var processNames = List ["\"tartini\"","\"spectralCentroid\"","\"spectralEntropy\"","\"specFlatness\"", "\"loudness\"", "\"fFTSpread\"", "\"sensoryDissonance\"", "\"transient\""];
-	var map=List(), output=List();
+		var map=List(), output=List();
 	    var segments, features, buf, scmir;
 	    var path = folder ++ name;
 
@@ -46,7 +46,7 @@
 		processNames.asString.postln; output.asString;
 
 		// Update the Sound with the average stats
-	   	db.sendMsg(SNDArchive.send, "sound", n, name, processNames.asArray.asString, output.asString);
+	   	db.sendMsg(SNDArchive.send, "sound", n, name, processNames.asArray.asString, output.asArray.asString);
 
 		// Create the Segments, one by one
 		segments.do{|segment, i|
