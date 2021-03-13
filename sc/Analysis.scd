@@ -11,11 +11,9 @@
 
 	analysis.analyse = {|ev, n, db, folder, name|
 
-	var processes = [ [\Tartini], [\SpecCentroid], [\SpectralEntropy], [\SpecFlatness], [\Loudness], [\FFTSpread], [\SensoryDissonance], [\Transient]];
-	    var processNames = ["\"tartini\"","\"spectralCentroid\"","\"spectralEntropy\"","\"specFlatness\"", "\"loudness\"", "\"fFTSpread\"", "\"sensoryDissonance\"", "\"transient\""];
-	   // var processes = [ [\Tartini], [\SpecCentroid] ];
-	   // var processNames = ["\"tartini\"","\"spectralCentroid\""];
-    	var map=Array.newClear(processes.size), output=Array.newClear(processes.size);
+	var processes = List [ [\Tartini], [\SpecCentroid], [\SpectralEntropy], [\SpecFlatness], [\Loudness], [\FFTSpread], [\SensoryDissonance], [\Transient]];
+	    var processNames = List ["\"tartini\"","\"spectralCentroid\"","\"spectralEntropy\"","\"specFlatness\"", "\"loudness\"", "\"fFTSpread\"", "\"sensoryDissonance\"", "\"transient\""];
+	var map=List(), output=List();
 	    var segments, features, buf, scmir;
 	    var path = folder ++ name;
 
@@ -23,7 +21,7 @@
 		buf = Buffer.read(s, path);
 		scmir = SCMIRAudioFile(path, processes);
 		scmir.extractFeatures(normalize:true); // TODO: Make optional
-		scmir.extractOnsets(threshold:0.1); // TODO: Make optionals
+		scmir.extractOnsets(threshold:0.6); // TODO: Make optionals
 		s.sync;
 
 		// Set end position for the segments
@@ -38,33 +36,35 @@
 		" ## Feature and segment size:".postln;
 		features.size.postln; segments.size.postln;
 
-	    features.postln;
-
-		processes.size.do{|i|
-			map[i] = features.unlace(8)[i];
-		    map[i].postln;
-			output[i] = map[i].sum / map[i].size;
+	    processes.size.do{|i|
+		    map.add(features.unlace(8)[i]);
+		    output.add(map[i].sum / map[i].size);
 		};
 
+		// Add sound duration
+		processNames.add("\"duration\""); output.add(buf.duration);
+		processNames.asString.postln; output.asString;
+
 		// Update the Sound with the average stats
-		db.sendMsg(SNDArchive.send, "sound", n, name, processNames.asString, output.asString);
+	   	db.sendMsg(SNDArchive.send, "sound", n, name, processNames.asArray.asString, output.asString);
 
 		// Create the Segments, one by one
 		segments.do{|segment, i|
 			var keys = List(), values = List();
-		    keys.add("\"index\""); values.add(i);
+			keys.add("\"index\""); values.add(i);
 			keys.add("\"start\""); values.add(segment[0]);
 			keys.add("\"end\""); values.add(segment[1]);
+			keys.add("\"duration\""); values.add(segment[1] - segment[0]);
 			keys.add("\"tartini\""); values.add(map[0][i]);
 			keys.add("\"spectralCentroid\""); values.add(map[1][i]);
-		    keys.add("\"spectralEntropy\""); values.add(map[2][i]);
-		    keys.add("\"specFlatness\""); values.add(map[3][i]);
-		    keys.add("\"loudness\""); values.add(map[4][i]);
+			keys.add("\"spectralEntropy\""); values.add(map[2][i]);
+			keys.add("\"specFlatness\""); values.add(map[3][i]);
+			keys.add("\"loudness\""); values.add(map[4][i]);
 			keys.add("\"fFTSpread\""); values.add(map[5][i]);
-		    keys.add("\"sensoryDissonance\""); values.add(map[6][i]);
-		    keys.add("\"transient\""); values.add(map[7][i]);
+			keys.add("\"sensoryDissonance\""); values.add(map[6][i]);
+			keys.add("\"transient\""); values.add(map[7][i]);
 			db.sendMsg(SNDArchive.send, "segment", n, name, keys.asArray.asString, values.asArray.asString);
-		};
+		}; 
 
 	    ("## Analysis Complete:" + name).postln;
 	};
@@ -77,7 +77,7 @@
 		OSCdef(\find, {|msg|
 			var sounds = msg[1].asString.split($,);
 
-		    "## Analysis run".postln;
+		    "## Analysis run".postln; sounds.postln;
 
 			{
 				sounds.do{|it|
@@ -95,6 +95,6 @@
 
 
 		// Call the db to Find sounds in a folder
-		ev.archive.db.sendMsg(SNDArchive.send, "findAll", ev.archive.name);
+		ev.archive.db.sendMsg(SNDArchive.send, "allSounds", ev.archive.name);
 	}
 )

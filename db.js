@@ -39,6 +39,9 @@ function init(name) {
         dir: {
             type: DataTypes.STRING
         },
+        duration: {
+            type: DataTypes.NUMBER
+        },
         tartini: {
             type: DataTypes.NUMBER
         },
@@ -75,6 +78,9 @@ function init(name) {
             type: DataTypes.NUMBER
         },
         end: {
+            type: DataTypes.NUMBER
+        },
+        duration: {
             type: DataTypes.NUMBER
         },
         tartini: {
@@ -169,8 +175,51 @@ function reply(msg) {
     udpPort.send(msg);
 }
 
-async function findAll(n) {
-    console.log('## API:findAll');
+async function findAllSegments(n) {
+    console.log('## API:findAllSegments');
+    console.log(n);
+
+    const segments = await Segment[n].findAll();
+    reply({
+        address: "/sndarchive",
+        args: [{
+            type: "s",
+            value: JSON.stringify(segments.map(x => [x.index,x.start,x.end,x.Sound.path]))
+        }]
+    });
+}
+
+async function findOneSegment(n, name) {
+    console.log('## API:findOneSegment');
+    const segment = await Segment[n].findOne({ where: { name: name } });
+    reply({
+        address: "/sndarchive",
+        args: [{
+            type: "s",
+            value: JSON.stringify(segments.map(x => [x.index,x.start,x.end,x.Sound.path]))
+        }]
+    });
+}
+
+async function findSegments(n, param, count=10, order='DESC') {
+    console.log('## API:findSegments');
+    const segments = await Segment[n].findAll({
+        order: [ [ param, order ] ],
+        limit: count,
+        include: Sound[n]
+    });
+
+    reply({
+        address: "/sndarchive",
+        args: [{
+            type: "s",
+            value: JSON.stringify(segments.map(x => [x.index,x.start,x.end,x.Sound.path]))
+        }]
+    });
+}
+
+async function findAllSounds(n) {
+    console.log('## API:findAllSounds');
     console.log(n);
 
     const sounds = await Sound[n].findAll();
@@ -181,80 +230,32 @@ async function findAll(n) {
             value: sounds.map(x => x.dir +'/'+ x.name)
         }]
     });
-};
+}
 
-async function findOne(n, name) {
-    console.log('## API:findOne');
+async function findOneSound(n, name) {
+    console.log('## API:findOneSound');
     const sound = await Sound[n].findOne({ where: { name: name } });
     reply({
         address: "/sndarchive",
         args: [{
             type: "s",
-            value: sound.name
+            value: JSON.stringify(sound.map(x => [0,0.0,x.duration,x.path]))
         }]
     });
 }
 
-async function findSome(n) {
-    console.log('## API:findSome');
-    const segments = await Segment[n].findAll({
-        // where: {
-        //     // spectralCentroid: {
-        //     //     [Op.gte]: 0
-        //     // }
-        // },
-        order: [ [ 'tartini', 'DESC' ] ],
-        limit: 10,
-        include: Sound
-    });
-
-    segments.sort(function (a, b) {
-        return a.spectralCentroid - b.spectralCentroid;
-    });
-
-    if(segments.size > 10) {
-        segments = segments.slice(0,10);
-    }
-
-    reply({
-        address: "/sndarchive",
-        args: [{
-            type: "s",
-            value: JSON.stringify(segments.map(x => [x.index,x.start,x.end,x.Sound.path + x.Sound.name]))
-        }]
-    });
-}
-
-async function findTop(n, param, count) {
-    console.log('## API:findTop');
-    const segments = await Segment[n].findAll({
-        order: [ [ param, 'DESC' ] ],
-        limit: count,
-        include: Sound[n]
+async function findSounds(n, param, count=10, order='DESC') {
+    console.log('## API:findSounds');
+    const sounds = await Sound[n].findAll({
+        order: [ [ param, order ] ],
+        limit: count
     });
 
     reply({
         address: "/sndarchive",
         args: [{
             type: "s",
-            value: JSON.stringify(segments.map(x => [x.index,x.start,x.end,x.Sound.path]))
-        }]
-    });
-}
-
-async function findBottom(n, param, count) {
-    console.log('## API:findBottom');
-    const segments = await Segment[n].findAll({
-        order: [ [ param, 'ASC' ] ],
-        limit: count,
-        include: Sound[n]
-    });
-
-    reply({
-        address: "/sndarchive",
-        args: [{
-            type: "s",
-            value: JSON.stringify(segments.map(x => [x.index,x.start,x.end,x.Sound.path]))
+            value: JSON.stringify(sounds.map(x => [0,0.0,x.duration,x.path]))
         }]
     });
 }
@@ -267,7 +268,6 @@ async function sound(n, name, params, values) {
 
     params = JSON.parse(params);
     values = JSON.parse(values);
-
     params.forEach((element, i) => sound[element] = values[i]);
     await sound.save();
 }
@@ -311,20 +311,26 @@ udpPort.on("message", function (msg) {
                 clearInit(n); break;
             case 'init':
                 init(n); break;
-            case 'findAll':
-                findAll(n); break;
-            case 'findSome':
-                findSome(n); break;
-            case 'findTop':
-                findTop(n, args[2].value, args[3].value); break;
-            case 'findBottom':
-                findBottom(n, args[2].value, args[3].value); break;
-            case 'findOne':
-                findOne(n, args[2].value); break;
             case 'sound':
                 sound(n, args[2].value, args[3].value, args[4].value); break;
             case 'segment':
                 segment(n, args[2].value, args[3].value, args[4].value); break;
+            case 'oneSegment':
+                findOneSegment(n, args[2].value); break;
+            case 'allSegments':
+                findAllSegments(n); break;
+            case 'topSegments':
+                findSegments(n, args[2].value, args[3].value, 'DESC'); break;
+            case 'bottomSegments':
+                findSegments(n, args[2].value, args[3].value, 'ASC'); break;
+            case 'oneSound':
+                findOneSound(n, args[2].value); break;
+            case 'allSounds':
+                findAllSounds(n); break;
+            case 'topSounds':
+                findSounds(n, args[2].value, args[3].value, 'DESC'); break;
+            case 'bottomSounds':
+                findSounds(n, args[2].value, args[3].value, 'ASC'); break;
             default:
                 console.log(`No handler found for: ${action}.`);
         }
