@@ -25,7 +25,7 @@
 		shape = Env([0, amp, amp, 0], [olap,dur,olap], \sine);
 		env = EnvGen.ar(shape, doneAction: 2);
 		pos = start * BufSamples.ir(buf);
-		sig = PlayBuf.ar(1, buf, rate * BufRateScale.ir(buf), 1, pos, 0);
+		sig = PlayBuf.ar(2, buf, rate * BufRateScale.ir(buf), 1, pos, 0);
 		OffsetOut.ar(out, Pan2.ar(sig * env, pan));
 	}).add;
 
@@ -95,7 +95,7 @@
 		pan = Pan2.ar(sig * env);
 		OffsetOut.ar(out, pan);
 	}).add;
-	
+
     // Utils
 
     reconstruct.format = {|ev,sounds|
@@ -131,46 +131,50 @@
 		});
 	};
 
-	reconstruct.normal = {|ev,sounds,name,amp=1,rate=1,overlap=1,instrument=\grainSharp|
+	reconstruct.normal = {|ev,sounds,name,amp=1,rate=1,overlap=1,
+	instrument=\grainSharp,repeats=inf|
 		var index = 0; sounds = ev.format(sounds);
 		Ndef(name)[0] =
 		Pbind(
 			\instrument, instrument,
 			\amp, amp, \rate, rate,
-			\index, Pseq((0..(sounds.size-1)),inf),
+			\index, Pseq((0..(sounds.size-1)),repeats),
 			[\dur, \buf, \start], reconstruct.durBufStart(sounds,overlap)
 		)
 	};
 
-	reconstruct.lwhite = {|ev,sounds,name,amp=1,rate=1,overlap=1,instrument=\dist|
+	reconstruct.lwhite = {|ev,sounds,name,amp=1,rate=1,overlap=1,
+	instrument=\dist,repeats=inf|
 		var index = 0; sounds = ev.format(sounds);
 		Ndef(name)[0] =
 		Pbind(
 			\instrument, instrument,
 			\amp, amp,\rate, rate,
-			\index, Pwhite(0, sounds.size-1,inf),
+			\index, Pwhite(0, sounds.size-1,repeats),
 			[\dur, \buf, \start], reconstruct.durBufStart(sounds,overlap)
 		)
 	};
 
-	reconstruct.lbrown = {|ev,sounds,name,amp=1,rate=1,overlap=1,instrument=\dist|
+	reconstruct.lbrown = {|ev,sounds,name,amp=1,rate=1,overlap=1,
+	instrument=\dist,repeats=inf|
 		var index = 0; sounds = ev.format(sounds);
 		Ndef(name)[0] =
 		Pbind(
 			\instrument, instrument,
 			\amp, amp,\rate, rate,
-			\index, Pbrown(0, sounds.size-1, 1,inf),
+			\index, Pbrown(0, sounds.size-1, 1,repeats),
 			[\dur, \buf, \start], reconstruct.durBufStart(sounds,overlap)
 		)
 	};
 
-	reconstruct.lbeta = {|ev,sounds,name,amp=1,rate=1,overlap=1,instrument=\dist|
+	reconstruct.lbeta = {|ev,sounds,name,amp=1,rate=1,overlap=1,
+	instrument=\dist,repeats=inf|
 		var index = 0; sounds = ev.format(sounds);
 		Ndef(name)[0] =
 		Pbind(
 			\instrument, instrument,
 			\amp, amp,\rate, 1,
-			\index, Pbeta(0, sounds.size-1),
+			\index, Pbeta(0, sounds.size-1, length: sounds.size * repeats),
 			[\dur, \buf, \start], reconstruct.durBufStart(sounds,overlap)
 		)
 	};

@@ -37,24 +37,30 @@
 	    db.sendMsg("/"++SNDArchive.receive, method, n, param, limit, from, to); ev
 	};
 
-    queries.combine = {|ev, seqa, seqb|
-	    (ev.archive.items[seqa] ++ ev.archive.items[seqb]).asSet.asArray
+    queries.findBySound = {|ev, method="topSegBySound", param="start", sound="", limit=15, name="query"|
+	    var n = ev.archive.name, db = ev.archive.db;
+	    ev.registerFind(name);
+	    db.sendMsg("/"++SNDArchive.receive, method, n, param, sound, limit); ev
 	};
 
-    queries.join = {|ev, seqa, seqb|
-	    ev.archive.items[seqa] ++ ev.archive.items[seqb];
+    queries.combine = {|ev, seqa, seqb, result|
+	    ev.archive.items[result] = (ev.archive.items[seqa] ++ ev.archive.items[seqb]).asSet.asArray
 	};
 
-    queries.common = {|ev, seqa, seqb|
-    	union(ev.archive.items[seqa], ev.archive.items[seqa])
+    queries.join = {|ev, seqa, seqb, result|
+	    ev.archive.items[result] = ev.archive.items[seqa] ++ ev.archive.items[seqb];
 	};
 
-    queries.intersection = {|ev, seqa, seqb|
-    	sect(ev.archive.items[seqa], ev.archive.items[seqa])
+    queries.common = {|ev, seqa, seqb, result|
+    	ev.archive.items[result] = union(ev.archive.items[seqa], ev.archive.items[seqa])
 	};
 
-    queries.diff = {|ev, seqa, seqb|
-    	difference(ev.archive.items[seqa], ev.archive.items[seqa])
+    queries.intersection = {|ev, seqa, seqb, result|
+    	ev.archive.items[result] = sect(ev.archive.items[seqa], ev.archive.items[seqa])
+	};
+
+    queries.diff = {|ev, seqa, seqb, result|
+    	ev.archive.items[result] = difference(ev.archive.items[seqa], ev.archive.items[seqa])
 	};
 
 	queries

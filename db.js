@@ -240,6 +240,26 @@ async function rangeSegments(n, param, count, from, to, order='DESC') {
     });
 }
 
+async function findSegmentBySound(n, param, sound, count=10, order='DESC') {
+    console.log('## API:findSegmentsBySound');
+    const segments = await Segment[n].findAll({
+        order: [ [ param, order ] ],
+        limit: count,
+        include: {
+            model: Sound[n],
+            where: {name : sound}
+        }
+    });
+
+    reply({
+        address: "/sndarchive",
+        args: [{
+            type: "s",
+            value: JSON.stringify(segments.map(x => [x.index,x.start,x.end,x.Sound.path]))
+        }]
+    });
+}
+
 async function findAllSounds(n) {
     console.log('## API:findAllSounds');
     console.log(n);
@@ -302,6 +322,8 @@ async function rangeSounds(n, param, count, from, to, order='DESC') {
     });
 }
 
+
+
 async function sound(n, name, params, values) {
     console.log('## API:sound');            
     const sound = await Sound[n].findOne(
@@ -341,7 +363,8 @@ udpPort.on("message", function (msg) {
         const args = msg.args;
         const action = args[0].value;
         const n = args[1].value;
-         
+        
+        console.log(" ### MSG ");
         console.log(JSON.stringify(msg));
 
         switch (action) {
@@ -381,6 +404,10 @@ udpPort.on("message", function (msg) {
                 rangeSounds(n, args[2].value, args[3].value, args[4].value, args[5].value, 'DESC'); break;
             case 'bottomRangeSounds':
                 rangeSounds(n, args[2].value, args[3].value, args[4].value, args[5].value,  'ASC'); break;
+            case 'topSegBySound':
+                findSegmentBySound(n, args[2].value, args[3].value, args[4].value, 'DESC'); break;
+            case 'bottomSegBySound':
+                findSegmentBySound(n, args[2].value, args[3].value, args[4].value,  'ASC'); break;
             default:
                 console.log(`No handler found for: ${action}.`);
         }
@@ -389,6 +416,6 @@ udpPort.on("message", function (msg) {
 
 // # Debug #
 // setTimeout(() => {   
-//     init("vox");
-//     rangeSegments("vox", "duration", 1.2, 1.3, 10, 'DESC');
-// }, 10); 
+//     init("upic-extracted");
+//     findSegmentBySound("upic-extracted", "duration", "updr_daw_rev.wav", 10, 'DESC');
+// }, 15); 
