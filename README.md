@@ -1,6 +1,6 @@
 
 # SNDArchive
-A small, expermental analysis frameworks for feature-based analysis of sound files and reassembling of those through playback agents.
+An expermental analysis frameworks for feature-based analysis (SCMIR) of sound files and reassembling of those through playback agents.
 
 ```javascript
 
