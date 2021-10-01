@@ -356,7 +356,7 @@ var reconstruct = ();
 		})
 	};
 
-	reconstruct.disco = {|ev,sounds,name,amp=1,rate=1,freq=18|
+	reconstruct.disc = {|ev,sounds,name,amp=1,rate=1,freq=18|
 		var buffers;
 		sounds = ev.format(sounds);
 		buffers = sounds.collect{|snd| ev.archive.buffers[snd.path] };
