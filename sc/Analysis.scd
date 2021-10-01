@@ -17,6 +17,8 @@
 	    var segments, features, buf, scmir;
 	    var path = folder ++ name;
 
+		try {
+
 		// Read and analyse
 		buf = Buffer.read(s, path);
 		scmir = SCMIRAudioFile(path, processes);
@@ -67,6 +69,13 @@
 		}; 
 
 	    ("## Analysis Complete:" + name).postln;
+
+		} {|error| 
+
+		("## Error analysing:" + name).postln;
+		error.postln;
+
+		};
 	};
 
 	analysis.run = {|ev|
@@ -88,7 +97,10 @@
 					parts.do{|part| filefolder = filefolder ++ "/" ++ part};
 					ev.analyse(ev.archive.name, ev.archive.db, filefolder.replace(file,""), file); s.sync;
 					})
-				}
+				};
+
+				 ("## Folder - Analysis Complete:" + folder).postln;
+
 			}.fork
 
 	    }, "/sndarchive");

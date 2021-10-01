@@ -11,6 +11,7 @@ SNDArchive {
 	var <>analysis;
 	var <>reconstruct;
 	var <>queries;
+	var <>extend;
 	var <>db;
 	var <>items;
 	var <>buffers;
@@ -36,8 +37,9 @@ SNDArchive {
 		this.analysis = interpreter.compileFile(this.libPath ++ "Analysis.scd").value;
 		this.reconstruct = interpreter.compileFile(this.libPath ++ "Reconstruct.scd").value;
 		this.queries = interpreter.compileFile(this.libPath ++ "Queries.scd").value;
+		this.extend = interpreter.compileFile(this.libPath ++ "Extend.scd").value;
 		this.analysis.archive = this; this.reconstruct.archive = this; this.queries.archive = this;
-        this.db = NetAddr(this.address, this.port);
+    this.db = NetAddr(this.address, this.port);
 		this.db.sendMsg(SNDArchive.send, "init", this.name);
 		^this;
 	}
@@ -53,6 +55,7 @@ SNDArchive {
 		this.analysis = interpreter.compileFile(this.libPath ++ "Analysis.scd").value;
 		this.reconstruct = interpreter.compileFile(this.libPath ++ "Reconstruct.scd").value;
 		this.queries = interpreter.compileFile(this.libPath ++ "Queries.scd").value;
+		this.extend = interpreter.compileFile(this.libPath ++ "Extend.scd").value;
 		this.analysis.archive = this; this.reconstruct.archive = this; this.queries.archive = this;
 	}
 

@@ -415,7 +415,7 @@ udpPort.on("message", function (msg) {
 });
 
 // # Debug #
-// setTimeout(() => {   
-//     init("upic-extracted");
-//     findSegmentBySound("upic-extracted", "duration", "updr_daw_rev.wav", 10, 'DESC');
-// }, 15); 
+setTimeout(() => {   
+    init("upic-extracted");
+    findSegmentBySound("upic-extracted", "duration", "updr_daw_rev.wav", 10, 'DESC');
+}, 15); 

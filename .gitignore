@@ -12,3 +12,4 @@ package-lock.json
 # Ignore temp dev files
 _
 db
+compose
