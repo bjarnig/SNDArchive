@@ -59,7 +59,7 @@ var reconstruct = ();
 		OffsetOut.ar(0, HPF.ar(bleeps * 0.8,40).dup * env);
 	}).add;
 
-	 SynthDef(\trigItem2, {
+	SynthDef(\trigItem2, {
 		|buf=0, rate=1, start=0, amp=0.75, dur=0.3, pan=0, bassFreq=50, bassAmp=0.25, bassAtk=0.1, bassRel=0.1, bassFb=0.3|
 		var sig, shape, env, pos, onsets, trigger, bleeps, chain;
 		shape = Env([0, amp, amp, 0], [dur*0.01, dur*0.89, dur*0.2]);
@@ -195,7 +195,6 @@ var reconstruct = ();
 		OffsetOut.ar(out, pan);
 	}).add;
 
-
 	SynthDef(\pink, {
 		|out=0, buf=0, amp=0.2, note=60, rate=1.0 atk=0.01, dec=0.1, sus=1, rel=0.8, rq=0.8, pos=0.125, gate=1.0|
 		var sig, env, pan, offset;
@@ -211,178 +210,190 @@ var reconstruct = ();
 
 }.fork;
 
-    // Utils
 
-    reconstruct.format = {|ev,sounds|
-		if(sounds.isString, {
-			ev.archive.items[sounds]
-		}, {
-			sounds
-		})
-    };
+// Utils
 
-    reconstruct.durBufStart = {|ev,sounds,overlap|
-		Pfunc {|event|
-			var part = sounds.wrapAt(event.index);
+reconstruct.format = {|ev,sounds|
+	if(sounds.isString, {
+		ev.archive.items[sounds]
+	}, {
+		sounds
+	})
+};
+
+reconstruct.durBufStart = {|ev,sounds,overlap|
+	Pfunc {|event|
+		var part = sounds.wrapAt(event.index);
+		var buf = ev.archive.buffers[part.path];
+		var normlized = part.start / buf.duration;
+		var dur = (part.end - part.start) * overlap;
+		[dur, buf, normlized[0]]
+	}
+};
+
+reconstruct.instrument = {|ev,instrument|
+	Pfunc{|e| if(e.buf.numChannels == 2, { instrument.asString ++ "2" }, { instrument }) }
+};
+
+// Reconstructions
+
+reconstruct.test = {|ev,sounds|
+	Routine({
+		inf.do{
+		sounds.do{|part, i|
 			var buf = ev.archive.buffers[part.path];
 			var normlized = part.start / buf.duration;
-			var dur = (part.end - part.start) * overlap;
-			[dur, buf, normlized[0]]
-		}
-	};
+			var dur = part.end - part.start;
+			Synth(\grainSharp, [\dur, dur, \buf, buf, \start, normlized[0]]);
+			dur.wait;
+		}}
+	});
+};
 
-    reconstruct.instrument = {|ev,instrument|
-	    Pfunc{|e| if(e.buf.numChannels == 2, { instrument.asString ++ "2" }, { instrument }) }
-	};
+reconstruct.normal = {|ev,sounds,name,amp=1,rate=1,overlap=1,
+instrument=\grainSharp,repeats=inf|
+	var index = 0; sounds = ev.format(sounds);
+	Ndef(name)[0] =
+	Pbind(
+		\instrument, instrument,
+		\amp, amp, \rate, rate,
+		\index, Pseq((0..(sounds.size-1)),repeats),
+		[\dur, \buf, \start], reconstruct.durBufStart(sounds,overlap),
+		\instrument, reconstruct.instrument(instrument)
+	)
+};
 
-    // Reconstructions
-
-    reconstruct.test = {|ev,sounds|
-		Routine({
-			inf.do{
-			sounds.do{|part, i|
-				var buf = ev.archive.buffers[part.path];
-				var normlized = part.start / buf.duration;
-				var dur = part.end - part.start;
-				Synth(\grainSharp, [\dur, dur, \buf, buf, \start, normlized[0]]);
-				dur.wait;
-			}}
-		});
-	};
-
-	reconstruct.normal = {|ev,sounds,name,amp=1,rate=1,overlap=1,
-	instrument=\grainSharp,repeats=inf|
-		var index = 0; sounds = ev.format(sounds);
-		Ndef(name)[0] =
-		Pbind(
-			\instrument, instrument,
-			\amp, amp, \rate, rate,
-			\index, Pseq((0..(sounds.size-1)),repeats),
-			[\dur, \buf, \start], reconstruct.durBufStart(sounds,overlap),
-		    \instrument, reconstruct.instrument(instrument)
-		)
-	};
-
-	reconstruct.lwhite = {|ev,sounds,name,amp=1,rate=1,overlap=1,
-	instrument=\dist,repeats=inf|
-		var index = 0; sounds = ev.format(sounds);
-		Ndef(name)[0] =
-		Pbind(
-			\amp, amp,\rate, rate,
-			\index, Pwhite(0, sounds.size-1,repeats),
-			[\dur, \buf, \start], reconstruct.durBufStart(sounds,overlap)
+reconstruct.lwhite = {|ev,sounds,name,amp=1,rate=1,overlap=1,
+instrument=\dist,repeats=inf|
+	var index = 0; sounds = ev.format(sounds);
+	Ndef(name)[0] =
+	Pbind(
+		\amp, amp,\rate, rate,
+		\index, Pwhite(0, sounds.size-1,repeats),
+		[\dur, \buf, \start], reconstruct.durBufStart(sounds,overlap)
 
 
-		)
-	};
+	)
+};
 
-	reconstruct.lbrown = {|ev,sounds,name,amp=1,rate=1,overlap=1,
-	instrument=\dist,repeats=inf|
-		var index = 0; sounds = ev.format(sounds);
-		Ndef(name)[0] =
-		Pbind(
-			\instrument, instrument,
-			\amp, amp,\rate, rate,
-			\index, Pbrown(0, sounds.size-1, 1,repeats),
-			[\dur, \buf, \start], reconstruct.durBufStart(sounds,overlap)
-		)
-	};
+reconstruct.lbrown = {|ev,sounds,name,amp=1,rate=1,overlap=1,
+instrument=\dist,repeats=inf|
+	var index = 0; sounds = ev.format(sounds);
+	Ndef(name)[0] =
+	Pbind(
+		\instrument, instrument,
+		\amp, amp,\rate, rate,
+		\index, Pbrown(0, sounds.size-1, 1,repeats),
+		[\dur, \buf, \start], reconstruct.durBufStart(sounds,overlap)
+	)
+};
 
-	reconstruct.lbeta = {|ev,sounds,name,amp=1,rate=1,overlap=1,
-	instrument=\dist,repeats=inf|
-		var index = 0; sounds = ev.format(sounds);
-		Ndef(name)[0] =
-		Pbind(
-			\instrument, instrument,
-			\amp, amp,\rate, 1,
-			\index, Pbeta(0, sounds.size-1, length: sounds.size * repeats),
-			[\dur, \buf, \start], reconstruct.durBufStart(sounds,overlap)
-		)
-	};
+reconstruct.lbeta = {|ev,sounds,name,amp=1,rate=1,overlap=1,
+instrument=\dist,repeats=inf|
+	var index = 0; sounds = ev.format(sounds);
+	Ndef(name)[0] =
+	Pbind(
+		\instrument, instrument,
+		\amp, amp,\rate, 1,
+		\index, Pbeta(0, sounds.size-1, length: sounds.size * repeats),
+		[\dur, \buf, \start], reconstruct.durBufStart(sounds,overlap)
+	)
+};
 
-	reconstruct.tgrain = {|ev,sounds,name,amp=1,rate=1,trig=50,grSizeFrom=0.001,grSizeTo=0.1|
-		var buffers;
-		sounds = ev.format(sounds);
-		buffers = sounds.collect{|snd| ev.archive.buffers[snd.path] };
+reconstruct.tgrain = {|ev,sounds,name,amp=1,rate=1,trig=50,grSizeFrom=0.001,grSizeTo=0.1|
+	var buffers;
+	sounds = ev.format(sounds);
+	buffers = sounds.collect{|snd| ev.archive.buffers[snd.path] };
 
-		Ndef(name, {
-			arg pan=0;
-			var trigger = Impulse.kr(trig);
-			var buf = Demand.kr(trigger, 0, Dxrand(buffers,inf));
-			var grSize = Amplitude.kr(PlayBuf.ar(1, buf, loop:1)).range(grSizeFrom, grSizeTo);
-			var pos = Amplitude.kr(PlayBuf.ar(1, buf, loop:1)).range(0, BufDur.kr(buf));
-			Splay.ar(TGrains.ar(1, trigger, buf, [0.5,1,2], pos, grSize, pan, amp))
-		})
-	};
+	Ndef(name, {
+		arg pan=0;
+		var trigger = Impulse.kr(trig);
+		var buf = Demand.kr(trigger, 0, Dxrand(buffers,inf));
+		var grSize = Amplitude.kr(PlayBuf.ar(1, buf, loop:1)).range(grSizeFrom, grSizeTo);
+		var pos = Amplitude.kr(PlayBuf.ar(1, buf, loop:1)).range(0, BufDur.kr(buf));
+		Splay.ar(TGrains.ar(1, trigger, buf, [0.5,1,2], pos, grSize, pan, amp))
+	})
+};
 
-	reconstruct.dringmod = {|ev,sounds,name,amp=1,rate=1,mod=1,rel=2,instrument=\distsaw|
-	    sounds = ev.format(sounds);
-		Ndef(name)[0] =
-		Pbind(\instrument, instrument,
-		\index, Pseq((0..(sounds.size-1)),inf), \buf, Pfunc{|en| var part=sounds[en.index]; ev.archive.buffers[part.path]},
-		\rel, rel, \amp, amp, \rate, rate, \pos, Pfunc{|en| var part=sounds[en.index];  part.start / en.buf.duration }, \mod, mod,
-		\dur, Pfunc{|en| var part=sounds[en.index];  part.end - part.start })
-	};
+reconstruct.dringmod = {|ev,sounds,name,amp=1,rate=1,mod=1,rel=2,instrument=\distsaw|
+	sounds = ev.format(sounds);
+	Ndef(name)[0] =
+	Pbind(\instrument, instrument,
+	\index, Pseq((0..(sounds.size-1)),inf), \buf, Pfunc{|en| var part=sounds[en.index]; ev.archive.buffers[part.path]},
+	\rel, rel, \amp, amp, \rate, rate, \pos, Pfunc{|en| var part=sounds[en.index];  part.start / en.buf.duration }, \mod, mod,
+	\dur, Pfunc{|en| var part=sounds[en.index];  part.end - part.start })
+};
 
-	reconstruct.tartini = {|ev,sounds,name,amp=1,rate=1|
-		var buffers;
-		sounds = ev.format(sounds);
-		buffers = sounds.collect{|snd| ev.archive.buffers[snd.path] };
+reconstruct.tartini = {|ev,sounds,name,amp=1,rate=1|
+	var buffers;
+	sounds = ev.format(sounds);
+	buffers = sounds.collect{|snd| ev.archive.buffers[snd.path] };
 
-		Ndef(name, {
-			var in, freq, hasFreq, vol, snd, trig=0.5;
-			var trigger = Impulse.kr(trig);
-			var buf = Demand.kr(trigger, 0, Dxrand(buffers,inf));
-			snd = PlayBuf.ar(1, buf,rate);
-			vol = RunningSum.ar(snd).linlin(-1,1, 0.0, amp);
-			# freq, hasFreq = Tartini.kr(snd);
-			Saw.ar(freq*[1,2]) * vol;
-		})
-	};
+	Ndef(name, {
+		var in, freq, hasFreq, vol, snd, trig=0.5;
+		var trigger = Impulse.kr(trig);
+		var buf = Demand.kr(trigger, 0, Dxrand(buffers,inf));
+		snd = PlayBuf.ar(1, buf,rate);
+		vol = RunningSum.ar(snd).linlin(-1,1, 0.0, amp);
+		# freq, hasFreq = Tartini.kr(snd);
+		Saw.ar(freq*[1,2]) * vol;
+	})
+};
 
-	reconstruct.wform = {arg ev,sounds,name,amp=1,rate=1,dfrom=0.01,dto=1.0,dur=60;
-		var buffers;
-		sounds = ev.format(sounds);
-		buffers = sounds.collect{|snd| ev.archive.buffers[snd.path] };
+reconstruct.wform = {arg ev,sounds,name,amp=1,rate=1,dfrom=0.01,dto=1.0,dur=60;
+	var buffers;
+	sounds = ev.format(sounds);
+	buffers = sounds.collect{|snd| ev.archive.buffers[snd.path] };
 
-		Ndef(name, {
-			var in, freq, hasFreq, vol, snd, trig=1;
-			var trigger = Impulse.kr(trig);
-			var buf = Demand.kr(trigger, 0, Dxrand(buffers,inf));
-			var levels = Dseq([-1, 1], inf);
-			var durs = Dseq([ Drand([dur,dur*2,dur*3],20), Dbrown(1,20,1,10) ], inf);
-			var pitch = Tartini.kr(PlayBuf.ar(1, buf,rate)).range(dfrom, dto);
-			DemandEnvGen.ar(levels, SampleDur.ir * durs * pitch[1] ! 2, 1, 0, 1) * 0.5
-		})
-	};
+	Ndef(name, {
+		var in, freq, hasFreq, vol, snd, trig=1;
+		var trigger = Impulse.kr(trig);
+		var buf = Demand.kr(trigger, 0, Dxrand(buffers,inf));
+		var levels = Dseq([-1, 1], inf);
+		var durs = Dseq([ Drand([dur,dur*2,dur*3],20), Dbrown(1,20,1,10) ], inf);
+		var pitch = Tartini.kr(PlayBuf.ar(1, buf,rate)).range(dfrom, dto);
+		DemandEnvGen.ar(levels, SampleDur.ir * durs * pitch[1] ! 2, 1, 0, 1) * 0.15
+	})
+};
 
-	reconstruct.disc = {|ev,sounds,name,amp=1,rate=1,freq=18|
-		var buffers;
-		sounds = ev.format(sounds);
-		buffers = sounds.collect{|snd| ev.archive.buffers[snd.path] };
+reconstruct.disc = {|ev,sounds,name,amp=1,rate=1,freq=18|
+	var buffers;
+	sounds = ev.format(sounds);
+	buffers = sounds.collect{|snd| ev.archive.buffers[snd.path] };
 
-		Ndef(name, {
-			var trig=1;
-			var trigger = Impulse.kr(trig);
-			var buf = Demand.kr(trigger, 0, Dxrand(buffers,inf));
-			HPF.ar(BBandStop.ar( PlayBuf.ar(1,buf).fold2(SinOsc.ar( [freq,freq+1])), 300, 8), 60) * 6
-		})
-	};
+	Ndef(name, {
+		var trig=1;
+		var trigger = Impulse.kr(trig);
+		var buf = Demand.kr(trigger, 0, Dxrand(buffers,inf));
+		HPF.ar(BBandStop.ar( PlayBuf.ar(1,buf).fold2(SinOsc.ar( [freq,freq+1])), 300, 8), 60) * 6
+	})
+};
 
-	reconstruct.ringing = {|ev,sounds,name,amp=1,rate=1,freq=80|
-		var buffers;
-		sounds = ev.format(sounds);
-		buffers = sounds.collect{|snd| ev.archive.buffers[snd.path] };
+reconstruct.ringing = {|ev,sounds,name,amp=1,rate=1,freq=80|
+	var buffers;
+	sounds = ev.format(sounds);
+	buffers = sounds.collect{|snd| ev.archive.buffers[snd.path] };
 
-		Ndef(name, {
-			var trig=1;
-			var trigger = Impulse.kr(trig);
-			var buf = Demand.kr(trigger, 0, Dxrand(buffers,inf));
-			var snd = BBandStop.ar( PlayBuf.ar(1,buf,loop:1).amclip(Saw.ar( freq )), [freq*6,freq*8], 3) * LFDorm.ar();
-			var ampf = Amplitude.ar(snd).range(0.5,8);
-			(snd * 0.75) + LPF.ar( CombC.ar( snd, 0.1, 0.1, ampf), 150) * 3
-		})
-	};
+	Ndef(name, {
+		var trig=1;
+		var trigger = Impulse.kr(trig);
+		var buf = Demand.kr(trigger, 0, Dxrand(buffers,inf));
+		var snd = BBandStop.ar( PlayBuf.ar(1,buf,loop:1).amclip(Saw.ar( freq )), [freq*6,freq*8], 3) * LFDorm.ar();
+		var ampf = Amplitude.ar(snd).range(0.5,8);
+		(snd * 0.75) + LPF.ar( CombC.ar( snd, 0.1, 0.1, ampf), 150) * 3
+	})
+};
+
+reconstruct.aggregate = {|ev,sounds,name,amp=1,rate=1,freq=80|
+	var buffers;
+	sounds = ev.format(sounds);
+	buffers = sounds.collect{|snd| ev.archive.buffers[snd.path] };
+
+	Ndef(name, {var freq = 80;
+	var snd = BBandStop.ar( PlayBuf.ar(1,buffers.choose,loop:1).amclip(Saw.ar( freq )), [freq*6,freq*8], 3) * LFDorm.ar();
+	var ampf = Amplitude.ar(snd).range(0.5,8);
+	(snd * 0.75) + LPF.ar( CombC.ar( snd, 0.1, 0.1, ampf), 150)})
+};
 
 reconstruct.highsaw = {|ev,sounds,name|
 
@@ -395,13 +406,11 @@ reconstruct.highsaw = {|ev,sounds,name|
 	var freq = Pitch.kr(PlayBuf.ar(1,buffers.choose));
 	var sig = Splay.ar(Saw.ar(Array.series(5, freq, freq/24) + mod));
 	sig = BPeakEQ.ar(BBandStop.ar(sig, harms * 10, 2.5), LFNoise1.kr(modFreq, 3500, 8000), 1, -10) * 2;
-		Splay.ar(sig * LFNoise1.ar(modFreq3).range(0.3,1.1)) * Amplitude.kr(PlayBuf.ar(1,buffers.choose), 0.1,0.1,2);
+		Splay.ar(sig * LFNoise1.ar(modFreq3).range(0.3,1.1) * Amplitude.kr(PlayBuf.ar(1,buffers.choose), 0.1,0.1,2)) ;
 	}).play;
 
 };
-
-
-
-
+	
 	reconstruct
+	
 )

@@ -8,25 +8,39 @@
 
 var extend = ();
 
-extend.linen = {|ev,nodes,name|
+extend.linen = {|ev,nodes|
 
 	Tdef(\tf, {
 
 		nodes.do{|node|
 			node.play;
-			rrand(2,4).wait;
+			rrand(3,8).wait;
 		};
 
-		rrand(6,8).wait;
+		rrand(6,9).wait;
 
 		nodes.do{|node|
 			node.stop;
-			rrand(2,4).wait;
+			rrand(2,3).wait;
 		};
 
 	}).play
 
 };
 
-	extend
+extend.offset = {|ev,nodes|
+
+	Tdef(\tf, {
+
+		nodes.do{|node|
+			node.play;
+			rrand(3,8).wait;
+		};
+
+	}).play
+
+};
+
+extend
+
 )
