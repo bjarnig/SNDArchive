@@ -333,7 +333,7 @@ reconstruct.tartini = {|ev,sounds,name,amp=1,rate=1|
 		var in, freq, hasFreq, vol, snd, trig=0.5;
 		var trigger = Impulse.kr(trig);
 		var buf = Demand.kr(trigger, 0, Dxrand(buffers,inf));
-		snd = PlayBuf.ar(1, buf,rate);
+		snd = PlayBuf.ar(1, buf,rate,loop:1);
 		vol = RunningSum.ar(snd).linlin(-1,1, 0.0, amp);
 		# freq, hasFreq = Tartini.kr(snd);
 		Saw.ar(freq*[1,2]) * vol;
@@ -384,15 +384,49 @@ reconstruct.ringing = {|ev,sounds,name,amp=1,rate=1,freq=80|
 	})
 };
 
+reconstruct.craft = {|ev,sounds,name,amp=1,rate=1,freq=80|
+	var buffers;
+	sounds = ev.format(sounds);
+	buffers = sounds.collect{|snd| ev.archive.buffers[snd.path] };
+
+	Ndef(name, {
+		var trig=1;
+		var trigger = Impulse.kr(trig);
+		var buf = Demand.kr(trigger, 0, Dxrand(buffers,inf));
+		var snd = BBandStop.ar( PlayBuf.ar(1,buf,loop:1).amclip(Saw.ar( freq )), [freq*12,freq*18], 3) * LFDorm.ar();
+		var ampf = Amplitude.ar(snd).range(0.5,8);
+		(snd * 0.75) + LPF.ar( CombC.ar( snd, 0.1, 0.1, ampf), 150) * 3
+	})
+};
+
 reconstruct.aggregate = {|ev,sounds,name,amp=1,rate=1,freq=80|
 	var buffers;
 	sounds = ev.format(sounds);
 	buffers = sounds.collect{|snd| ev.archive.buffers[snd.path] };
 
+	// Only test for now ...
+
+	t = TempoClock.new;
+	t.sched(2, {
+   		Ndef(\il);
+		Pdef(\li,
+		Pbind(
+			\instrument, \slot5,
+			\amp, Env([0.0,0.6,0.8,1.3,1.5,2.0], [4,5,4,12,10,8]),
+			\rel, 0.15,
+			\rate, Pseq([ Pn(1,16), 0.75], inf),
+			\dur, Prand([0.1,0.2,0.3,0.05], inf),
+			\buf, ~pFri.asArray[16]
+		));
+
+		Ndef(\il, Pdef(\li)).play;
+		Ndef(\il).filter(2, {|in| XFade2.ar(in, Greyhole.ar(in, 0.1, 0.9), -0.5) });
+	});
+
 	Ndef(name, {var freq = 80;
 	var snd = BBandStop.ar( PlayBuf.ar(1,buffers.choose,loop:1).amclip(Saw.ar( freq )), [freq*6,freq*8], 3) * LFDorm.ar();
 	var ampf = Amplitude.ar(snd).range(0.5,8);
-	(snd * 0.75) + LPF.ar( CombC.ar( snd, 0.1, 0.1, ampf), 150)})
+	(snd * 0.75) + LPF.ar( CombC.ar( snd, 0.1, 0.1, ampf), 150)});
 };
 
 reconstruct.highsaw = {|ev,sounds,name|
@@ -403,14 +437,14 @@ reconstruct.highsaw = {|ev,sounds,name|
 
 	Ndef(name, {|harms=170, modFreq=9, modFreq2=1, modFreq3=3.1|
 	var mod = SinOsc.ar(LFNoise2.kr(modFreq2).range(modFreq * 5, 0.5), 0, LFNoise1.kr(modFreq/10).range(5, 20));
-	var freq = Pitch.kr(PlayBuf.ar(1,buffers.choose));
+	var freq = Pitch.kr(PlayBuf.ar(1,buffers.choose,loop:1));
 	var sig = Splay.ar(Saw.ar(Array.series(5, freq, freq/24) + mod));
 	sig = BPeakEQ.ar(BBandStop.ar(sig, harms * 10, 2.5), LFNoise1.kr(modFreq, 3500, 8000), 1, -10) * 2;
-		Splay.ar(sig * LFNoise1.ar(modFreq3).range(0.3,1.1) * Amplitude.kr(PlayBuf.ar(1,buffers.choose), 0.1,0.1,2)) ;
+	HPF.ar(Splay.ar(sig * LFNoise1.ar(modFreq3).range(0.3,1.1) * Lag.kr(Amplitude.kr(PlayBuf.ar(1,buffers.choose,loop:1)),0.5,2)),80);
 	}).play;
 
 };
-	
+
 	reconstruct
-	
+
 )

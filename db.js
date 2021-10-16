@@ -202,7 +202,9 @@ async function findOneSegment(n, name) {
 }
 
 async function findSegments(n, param, count=10, order='DESC') {
+    
     console.log('## API:findSegments');
+    
     const segments = await Segment[n].findAll({
         order: [ [ param, order ] ],
         limit: count,
@@ -215,7 +217,32 @@ async function findSegments(n, param, count=10, order='DESC') {
             type: "s",
             value: JSON.stringify(segments.map(x => [x.index,x.start,x.end,x.Sound.path]))
         }]
-    });
+    }); 
+
+    // const sounds = await Segment[n].findAll({
+    //     order: [ [ param, order ] ],
+    //     include: Sound[n]
+    // });
+
+    // // const sounds = await Sound[n].findAll({
+    // //     order: [ [ param, order ] ]
+    // // });
+
+
+    // let items = { '0.2' : 0, '0.4' : 0, '0.6' : 0, '0.8' : 0, '1.0' : 0  }; 
+    // sounds.forEach((sound) => { 
+    
+    // if(sound.spectralCentroid > 0.0 && sound.spectralCentroid < 0.2) { items['0.2'] =  items['0.2'] + 1 };
+    // if(sound.spectralCentroid > 0.2 && sound.spectralCentroid < 0.4) { items['0.4'] =  items['0.4'] + 1 };
+    // if(sound.spectralCentroid > 0.4 && sound.spectralCentroid < 0.6) { items['0.6'] =  items['0.6'] + 1 };
+    // if(sound.spectralCentroid > 0.6 && sound.spectralCentroid < 0.8) { items['0.8'] =  items['0.8'] + 1 };
+    // if(sound.spectralCentroid > 0.8 && sound.spectralCentroid < 1.0) { items['1.0'] =  items['1.0'] + 1 };
+
+    // });
+    
+    // //let data = JSON.stringify({ 'items' : items });
+    // let data = JSON.stringify(items);
+    // console.log(data);
 }
 
 async function rangeSegments(n, param, count, from, to, order='DESC') {

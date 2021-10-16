@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 //
-//                SNDArchive - Reconstruct
+//                SNDArchive - Extend
 //
 ////////////////////////////////////////////////////////////////
 
@@ -28,13 +28,20 @@ extend.linen = {|ev,nodes|
 
 };
 
-extend.offset = {|ev,nodes|
+extend.offset = {|ev,nodes, duration=32|
 
 	Tdef(\tf, {
 
 		nodes.do{|node|
 			node.play;
 			rrand(3,8).wait;
+		};
+
+		duration.wait;
+
+		nodes.do{|node|
+			node.stop;
+			rrand(1,2).wait;
 		};
 
 	}).play
