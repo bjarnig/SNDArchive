@@ -16,7 +16,7 @@
 		)
 	};
 
-    queries.registerFind = {|ev, name|
+  queries.registerFind = {|ev, name|
 		OSCdef(\find, {|msg|
 		    var result = msg[1].asString.replace("],","").split($[);
 		    var segments = result.collect({|result|queries.convert(result.split($,));
@@ -25,7 +25,7 @@
 		}, SNDArchive.send);
     };
 
-    queries.find = {|ev, method="topSegments", param="start", limit=15, name="query"|
+  queries.find = {|ev, method="topSegments", param="start", limit=15, name="query"|
 	    var n = ev.archive.name, db = ev.archive.db;
 	    ev.registerFind(name);
 	    db.sendMsg("/"++SNDArchive.receive, method, n, param, limit); ev

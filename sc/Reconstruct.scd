@@ -350,13 +350,42 @@ reconstruct.wform = {arg ev,sounds,name,amp=1,rate=1,dfrom=0.01,dto=1.0,dur=60;
 		var trigger = Impulse.kr(trig);
 		var buf = Demand.kr(trigger, 0, Dxrand(buffers,inf));
 		var levels = Dseq([-1, 1], inf);
-		var durs = Dseq([ Drand([dur,dur*2,dur*3],20), Dbrown(1,20,1,10) ], inf);
-		var pitch = Tartini.kr(PlayBuf.ar(1, buf,rate)).range(dfrom, dto);
-		DemandEnvGen.ar(levels, SampleDur.ir * durs * pitch[1] ! 2, 1, 0, 1) * 0.15
+		var durs = Dseq([ Drand([dur,dur*2],20), Dbrown(1,20,1,10) ], inf);
+		var pitch = Tartini.kr(PlayBuf.ar(1, buf,rate,loop:1)).range(dfrom, dto);
+		DemandEnvGen.ar(levels, SampleDur.ir * durs * pitch[1] ! 2, 1, 0, 1) * 0.1
+	})
+};
+
+reconstruct.wformb = {arg ev,sounds,name,amp=1,rate=1,dfrom=0.01,dto=1.0,dur=60;
+	var buffers;
+	sounds = ev.format(sounds);
+	buffers = sounds.collect{|snd| ev.archive.buffers[snd.path]};
+
+	Ndef(name, {
+		var in, freq, hasFreq, vol, snd, trig=1;
+		var trigger = Dust.kr(trig);
+		var buf = Demand.kr(trigger, 0, Dseq(buffers,inf));
+		var levels = Dseq([-1, 1], inf);
+		var durs = Dseq([ Dbrown(dfrom,dur,dfrom,dur), Dbrown(dfrom,dur,dfrom,dur)], inf);
+		var pitch = Tartini.kr(PlayBuf.ar(1, buf,rate,loop:1)).range(dfrom, dto);
+		DemandEnvGen.ar(levels, SampleDur.ir * durs * pitch[1] ! 2, 1, 0, 1).sin(SinOsc.ar(dur)) * 0.1
 	})
 };
 
 reconstruct.disc = {|ev,sounds,name,amp=1,rate=1,freq=18|
+	var buffers;
+	sounds = ev.format(sounds);
+	buffers = sounds.collect{|snd| ev.archive.buffers[snd.path] };
+
+	Ndef(name, {
+		var trig=1;
+		var trigger = Impulse.kr(trig);
+		var buf = Demand.kr(trigger, 0, Dxrand(buffers,inf));
+		HPF.ar(BBandStop.ar( PlayBuf.ar(1,buf).fold2(SinOsc.ar( [freq,freq+1])), 300, 8), 60) * 6
+	})
+};
+
+reconstruct.discb = {|ev,sounds,name,amp=1,rate=1,freq=18|
 	var buffers;
 	sounds = ev.format(sounds);
 	buffers = sounds.collect{|snd| ev.archive.buffers[snd.path] };

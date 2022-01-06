@@ -211,6 +211,9 @@ async function findSegments(n, param, count=10, order='DESC') {
         include: Sound[n]
     });
 
+    console.log(' ======> segment size ');
+    console.log(segments.length);
+
     reply({
         address: "/sndarchive",
         args: [{
