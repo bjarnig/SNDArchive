@@ -270,9 +270,8 @@ instrument=\dist,repeats=inf|
 	Pbind(
 		\amp, amp,\rate, rate,
 		\index, Pwhite(0, sounds.size-1,repeats),
-		[\dur, \buf, \start], reconstruct.durBufStart(sounds,overlap)
-
-
+		[\dur, \buf, \start], reconstruct.durBufStart(sounds,overlap),
+		\instrument, reconstruct.instrument(instrument)
 	)
 };
 
@@ -367,8 +366,9 @@ reconstruct.wformb = {arg ev,sounds,name,amp=1,rate=1,dfrom=0.01,dto=1.0,dur=60;
 		var buf = Demand.kr(trigger, 0, Dseq(buffers,inf));
 		var levels = Dseq([-1, 1], inf);
 		var durs = Dseq([ Dbrown(dfrom,dur,dfrom,dur), Dbrown(dfrom,dur,dfrom,dur)], inf);
-		var pitch = Tartini.kr(PlayBuf.ar(1, buf,rate,loop:1)).range(dfrom, dto);
-		DemandEnvGen.ar(levels, SampleDur.ir * durs * pitch[1] ! 2, 1, 0, 1).sin(SinOsc.ar(dur)) * 0.1
+		var pitch = Lag.kr(Tartini.kr(PlayBuf.ar(1, buf,rate,loop:1)).range(dfrom, dto),0.5);
+		var pb = PlayBuf.ar(1, buf, rate, loop:1); 
+		pb * DemandEnvGen.ar(levels, SampleDur.ir * durs * pitch[1] ! 2, 1, 0, 1).fold2(SinOsc.ar(dur)) * pitch[1].min(1)
 	})
 };
 
@@ -385,16 +385,18 @@ reconstruct.disc = {|ev,sounds,name,amp=1,rate=1,freq=18|
 	})
 };
 
-reconstruct.discb = {|ev,sounds,name,amp=1,rate=1,freq=18|
+reconstruct.discb = {|ev,sounds,name,amp=1,rate=1,freq=10|
 	var buffers;
 	sounds = ev.format(sounds);
 	buffers = sounds.collect{|snd| ev.archive.buffers[snd.path] };
 
 	Ndef(name, {
 		var trig=1;
-		var trigger = Impulse.kr(trig);
-		var buf = Demand.kr(trigger, 0, Dxrand(buffers,inf));
-		HPF.ar(BBandStop.ar( PlayBuf.ar(1,buf).fold2(SinOsc.ar( [freq,freq+1])), 300, 8), 60) * 6
+		var trigger = Dust.kr(trig);
+		var buf = Demand.kr(trigger, 0, Dseq(buffers,inf));
+		HPF.ar(BBandStop.ar( 
+			PlayBuf.ar(1,buf,loop:1).fold2(LFTri.ar( [freq,freq+1])), 
+			LFNoise1.kr(freq * 0.3).range(100,1000), 8), 60) * 6
 	})
 };
 
