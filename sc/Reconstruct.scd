@@ -24,6 +24,16 @@ var reconstruct = ();
 		OffsetOut.ar(out, Pan2.ar(sig * env, pan));
 	}).add;
 
+	SynthDef(\grain2, {
+		|out=0,buf=0, rate=1, start=0, amp=0.5, dur=0.3, pan=0|
+		var sig, shape, env, pos;
+		shape = Env([0, amp, 0], [dur*0.5, dur*0.5], \sine);
+		env = EnvGen.ar(shape, doneAction: 2);
+		pos = start * BufSamples.ir(buf);
+		sig = PlayBuf.ar(1, buf, rate * BufRateScale.ir(buf), 1, pos, 0);
+		OffsetOut.ar(out, Pan2.ar(sig * env, pan));
+	}).add;
+
 	SynthDef(\grainSharp, {
 		|out=0,buf=0, rate=1, start=0, amp=0.5, dur=0.3, pan=0, olap=0.05|
 		var sig, shape, env, pos;
@@ -38,6 +48,26 @@ var reconstruct = ();
 		|out=0,buf=0, rate=1, start=0, amp=0.5, dur=0.3, pan=0, olap=0.05|
 		var sig, shape, env, pos;
 		shape = Env([0, amp, amp, 0], [olap,dur,olap], \sine);
+		env = EnvGen.ar(shape, doneAction: 2);
+		pos = start * BufSamples.ir(buf);
+		sig = PlayBuf.ar(2, buf, rate * BufRateScale.ir(buf), 1, pos);
+		OffsetOut.ar(out, Pan2.ar(sig * env, pan));
+	}).add;
+
+	SynthDef(\grainSharper, {
+		|out=0,buf=0, rate=1, start=0, amp=0.5, dur=0.3, pan=0, olap=0.05|
+		var sig, shape, env, pos;
+		shape = Env.perc(0.001,0.2,amp*1.5); 
+		env = EnvGen.ar(shape, doneAction: 2);
+		pos = start * BufSamples.ir(buf);
+		sig = PlayBuf.ar(1, buf, rate * BufRateScale.ir(buf), 1, pos);
+		OffsetOut.ar(out, Pan2.ar(sig * env, pan));
+	}).add;
+
+    SynthDef(\grainSharper2, {
+		|out=0,buf=0, rate=1, start=0, amp=0.5, dur=0.3, pan=0, olap=0.05|
+		var sig, shape, env, pos;
+		shape = Env.perc(0.001,0.2,amp*1.5); 
 		env = EnvGen.ar(shape, doneAction: 2);
 		pos = start * BufSamples.ir(buf);
 		sig = PlayBuf.ar(2, buf, rate * BufRateScale.ir(buf), 1, pos);
@@ -171,7 +201,7 @@ var reconstruct = ();
 		OffsetOut.ar(out, Pan2.ar(sig * env, pan));
 	}).add;
 
-	SynthDef(\am, {
+	SynthDef(\am2, {
 		|out=0, buf=0, rate=1, start=0, amp=0.95, dur=0.3, pan=0, am=50|
 		var sig, shape, env, pos;
 		shape = Env([0, amp, amp, 0], [dur*0.01, dur*0.89, dur*0.1]);
@@ -195,7 +225,7 @@ var reconstruct = ();
 		OffsetOut.ar(out, pan);
 	}).add;
 
-	SynthDef(\pink, {
+	SynthDef(\pink2, {
 		|out=0, buf=0, amp=0.2, note=60, rate=1.0 atk=0.01, dec=0.1, sus=1, rel=0.8, rq=0.8, pos=0.125, gate=1.0|
 		var sig, env, pan, offset;
 		env = EnvGen.kr(Env.adsr(atk, dec, sus, rel), gate, amp, doneAction:2);
@@ -280,10 +310,10 @@ instrument=\dist,repeats=inf|
 	var index = 0; sounds = ev.format(sounds);
 	Ndef(name)[0] =
 	Pbind(
-		\instrument, instrument,
 		\amp, amp,\rate, rate,
 		\index, Pbrown(0, sounds.size-1, 1,repeats),
-		[\dur, \buf, \start], reconstruct.durBufStart(sounds,overlap)
+		[\dur, \buf, \start], reconstruct.durBufStart(sounds,overlap),
+		\instrument, reconstruct.instrument(instrument)
 	)
 };
 
@@ -292,10 +322,22 @@ instrument=\dist,repeats=inf|
 	var index = 0; sounds = ev.format(sounds);
 	Ndef(name)[0] =
 	Pbind(
-		\instrument, instrument,
-		\amp, amp,\rate, 1,
+		\amp, amp,\rate, rate,
 		\index, Pbeta(0, sounds.size-1, length: sounds.size * repeats),
-		[\dur, \buf, \start], reconstruct.durBufStart(sounds,overlap)
+		[\dur, \buf, \start], reconstruct.durBufStart(sounds,overlap),
+		\instrument, reconstruct.instrument(instrument)
+	)
+};
+
+reconstruct.lbeta2 = {|ev,sounds,name,amp=1,rate=1,overlap=1,
+instrument=\dist,repeats=inf|
+	var index = 0; sounds = ev.format(sounds);
+	Ndef(name)[0] =
+	Pbind(
+		\amp, amp,\rate, rate,
+		\index, Pbeta(0, sounds.size-1, length: sounds.size * repeats),
+		[\dur, \buf, \start], reconstruct.durBufStart(sounds,overlap),
+		\instrument, reconstruct.instrument(instrument)
 	)
 };
 
@@ -318,7 +360,7 @@ reconstruct.dringmod = {|ev,sounds,name,amp=1,rate=1,mod=1,rel=2,instrument=\dis
 	sounds = ev.format(sounds);
 	Ndef(name)[0] =
 	Pbind(\instrument, instrument,
-	\index, Pseq((0..(sounds.size-1)),inf), \buf, Pfunc{|en| var part=sounds[en.index]; ev.archive.buffers[part.path]},
+	\index, Prand((0..(sounds.size-1)),inf), \buf, Pfunc{|en| var part=sounds[en.index]; ev.archive.buffers[part.path]},
 	\rel, rel, \amp, amp, \rate, rate, \pos, Pfunc{|en| var part=sounds[en.index];  part.start / en.buf.duration }, \mod, mod,
 	\dur, Pfunc{|en| var part=sounds[en.index];  part.end - part.start })
 };
@@ -426,7 +468,7 @@ reconstruct.craft = {|ev,sounds,name,amp=1,rate=1,freq=80|
 		var buf = Demand.kr(trigger, 0, Dxrand(buffers,inf));
 		var snd = BBandStop.ar( PlayBuf.ar(1,buf,loop:1).amclip(Saw.ar( freq )), [freq*12,freq*18], 3) * LFDorm.ar();
 		var ampf = Amplitude.ar(snd).range(0.5,8);
-		(snd * 0.75) + LPF.ar( CombC.ar( snd, 0.1, 0.1, ampf), 150) * 3
+		(snd * 0.75) + LPF.ar( CombC.ar( snd, 0.1, 0.1, ampf), 100) * 3
 	})
 };
 
