@@ -453,7 +453,7 @@ reconstruct.ringing = {|ev,sounds,name,amp=1,rate=1,freq=80|
 		var buf = Demand.kr(trigger, 0, Dxrand(buffers,inf));
 		var snd = BBandStop.ar( PlayBuf.ar(1,buf,loop:1).amclip(Saw.ar( freq )), [freq*6,freq*8], 3) * LFDorm.ar();
 		var ampf = Amplitude.ar(snd).range(0.5,8);
-		(snd * 0.75) + LPF.ar( CombC.ar( snd, 0.1, 0.1, ampf), 150) * 3
+		(snd * 0.75) + LPF.ar( CombC.ar( snd, 0.1, 0.1, ampf), 100) * 3
 	})
 };
 
