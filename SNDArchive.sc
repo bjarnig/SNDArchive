@@ -26,7 +26,8 @@ SNDArchive {
 		if(lib.notNil, {
 			instance = super.newCopyArgs(sounds, lib, address, port, dbname)
 		}, {
-			instance = super.newCopyArgs(sounds, Platform.userExtensionDir++"/Dev/SNDArchive/sc/", address, port, dbname)
+			instance = super.newCopyArgs(sounds, thisMethod.filenameSymbol.asString.replace("SNDArchive.sc", "sc/"),
+			address, port, dbname)
 		});
 
 		^instance.init(interpreter);

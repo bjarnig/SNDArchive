@@ -57,7 +57,7 @@ var reconstruct = ();
 	SynthDef(\grainSharper, {
 		|out=0,buf=0, rate=1, start=0, amp=0.5, dur=0.3, pan=0, olap=0.05|
 		var sig, shape, env, pos;
-		shape = Env.perc(0.001,0.2,amp*1.5); 
+		shape = Env.perc(0.001,0.2,amp*1.5);
 		env = EnvGen.ar(shape, doneAction: 2);
 		pos = start * BufSamples.ir(buf);
 		sig = PlayBuf.ar(1, buf, rate * BufRateScale.ir(buf), 1, pos);
@@ -67,7 +67,7 @@ var reconstruct = ();
     SynthDef(\grainSharper2, {
 		|out=0,buf=0, rate=1, start=0, amp=0.5, dur=0.3, pan=0, olap=0.05|
 		var sig, shape, env, pos;
-		shape = Env.perc(0.001,0.2,amp*1.5); 
+		shape = Env.perc(0.001,0.2,amp*1.5);
 		env = EnvGen.ar(shape, doneAction: 2);
 		pos = start * BufSamples.ir(buf);
 		sig = PlayBuf.ar(2, buf, rate * BufRateScale.ir(buf), 1, pos);
@@ -257,7 +257,7 @@ reconstruct.durBufStart = {|ev,sounds,overlap|
 		var buf = ev.archive.buffers[part.path];
 		var normlized = part.start / buf.duration;
 		var dur = (part.end - part.start) * overlap;
-		[dur, buf, normlized[0]]
+		[dur, buf, normlized]
 	}
 };
 
@@ -274,7 +274,7 @@ reconstruct.test = {|ev,sounds|
 			var buf = ev.archive.buffers[part.path];
 			var normlized = part.start / buf.duration;
 			var dur = part.end - part.start;
-			Synth(\grainSharp, [\dur, dur, \buf, buf, \start, normlized[0]]);
+			Synth(\grainSharp, [\dur, dur, \buf, buf, \start, normlized]);
 			dur.wait;
 		}}
 	});
@@ -283,6 +283,7 @@ reconstruct.test = {|ev,sounds|
 reconstruct.normal = {|ev,sounds,name,amp=1,rate=1,overlap=1,
 instrument=\grainSharp,repeats=inf|
 	var index = 0; sounds = ev.format(sounds);
+	sounds.postln;
 	Ndef(name)[0] =
 	Pbind(
 		\instrument, instrument,
@@ -409,7 +410,7 @@ reconstruct.wformb = {arg ev,sounds,name,amp=1,rate=1,dfrom=0.01,dto=1.0,dur=60;
 		var levels = Dseq([-1, 1], inf);
 		var durs = Dseq([ Dbrown(dfrom,dur,dfrom,dur), Dbrown(dfrom,dur,dfrom,dur)], inf);
 		var pitch = Lag.kr(Tartini.kr(PlayBuf.ar(1, buf,rate,loop:1)).range(dfrom, dto),0.5);
-		var pb = PlayBuf.ar(1, buf, rate, loop:1); 
+		var pb = PlayBuf.ar(1, buf, rate, loop:1);
 		pb * DemandEnvGen.ar(levels, SampleDur.ir * durs * pitch[1] ! 2, 1, 0, 1).fold2(SinOsc.ar(dur)) * pitch[1].min(1)
 	})
 };
@@ -436,8 +437,8 @@ reconstruct.discb = {|ev,sounds,name,amp=1,rate=1,freq=10|
 		var trig=1;
 		var trigger = Dust.kr(trig);
 		var buf = Demand.kr(trigger, 0, Dseq(buffers,inf));
-		HPF.ar(BBandStop.ar( 
-			PlayBuf.ar(1,buf,loop:1).fold2(LFTri.ar( [freq,freq+1])), 
+		HPF.ar(BBandStop.ar(
+			PlayBuf.ar(1,buf,loop:1).fold2(LFTri.ar( [freq,freq+1])),
 			LFNoise1.kr(freq * 0.3).range(100,1000), 8), 60) * 6
 	})
 };

@@ -4,17 +4,21 @@ An expermental analysis frameworks for feature-based analysis (SCMIR) of sound f
 
 ```javascript
 
-/* Install SNDArchive */
-
+/* Install SNDArchive and SCMIR */
 
 Quarks.install("https://github.com/bjarnig/SNDArchive")
 
-SND Archive requires, nodejs, sqlite and sequalize. 
+Quarks.install("https://github.com/nhthn/SCMIR")
+
+SND Archive requires, nodejs, sqlite and sequalize.
+
+npm install
 
 npm install --save sqlite3
 
 npm install --save sequelize
 
+// Run on terminal to start the server
 node db.js
 
 // In case of large dbs the upd packet size needs to be increased
@@ -24,14 +28,20 @@ sudo sysctl -w net.inet.udp.maxdgram=65535
 
 /* In SuperCollider  */
 
-// Archive init
-x = SNDArchive(this, Upics.path ++ "material/extracted", dbname:"upic-extracted");
+// Boot the server
+s.boot;
+
+// Archive init, needs a path to a folder it will create the database after
+x = SNDArchive(this, "/Users/bjarni/Works/Archive/complex/spectral/", dbname:"spectral");
 
 // Creates the DB
 x.create
 
 // Analyse the sound
 x.analyse
+
+// One can inspect the db using a tool such as:
+https://sqlitebrowser.org
 
 
 /*
